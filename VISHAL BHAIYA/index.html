@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>QR Product System Pro - Google Sheets Sync</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .glass-card {
+            background: rgba(255,255,255,0.98);
+            border-radius: 32px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .btn-secondary {
+            background: #f0f0f0;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            margin: 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .nav {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 80px;
+            backdrop-filter: blur(8px);
+        }
+        .nav-item {
+            padding: 10px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-item:hover, .nav-item.active { background: white; color: #667eea; }
+        .stat-card {
+            background: white;
+            padding: 28px;
+            border-radius: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .stat-number { font-size: 48px; font-weight: 800; color: #667eea; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        .badge-active { background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+        .badge-inactive { background: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 32px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            z-index: 1100;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .qr-item {
+            text-align: center;
+            padding: 15px 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: white;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .qr-item p {
+            margin-top: 10px;
+            font-weight: 700;
+            font-size: 12px;
+            color: #1e293b;
+        }
+        .qr-item small {
+            display: none;
+        }
+        /* PDF Print Styles */
+        @media print {
+            body { 
+                background: white; 
+                padding: 0; 
+                margin: 0; 
+            }
+            .nav, .btn-primary, .btn-secondary, .btn-success, .sync-status, .toast, 
+            button, .modal, .glass-card > button:not(.no-print), 
+            .container > .glass-card:first-child button {
+                display: none !important;
+            }
+            .qr-item {
+                break-inside: avoid;
+                page-break-inside: avoid;
+                border: 1px solid #ddd;
+                margin: 0;
+                padding: 10px;
+            }
+            .qr-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 15px;
+                margin: 0;
+                padding: 10px;
+            }
+            .container {
+                max-width: 100%;
+                padding: 0;
+                margin: 0;
+            }
+            .glass-card {
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+                background: white;
+            }
+            .qr-item p {
+                font-size: 10pt;
+                font-weight: bold;
+                margin: 8px 0 0 0;
+                display: block;
+            }
+            .qr-item small {
+                display: none;
+            }
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .product-detail-container {
+            max-width: 900px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 40px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .info-box {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 15px 0;
+        }
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #e2e8f0;
+        }
+        .sync-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 12px 0;
+            border-bottom: 1px solid #edf0f5;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .detail-label {
+            color: #4a6fa5;
+            font-weight: 600;
+            font-size: 0.85rem;
+            min-width: 180px;
+        }
+        .detail-value {
+            color: #1e293b;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: right;
+            flex: 1;
+        }
+        .pdf-print-area {
+            background: white;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+    // ==================== CONFIGURATION ====================
+    const BASE_URL = window.location.origin + window.location.pathname;
+    let products = [];
+    let currentUser = false;
+    let currentView = 'dashboard';
+    let refreshInterval;
+    
+    // IMPORTANT: Apna Google Apps Script Web App URL yahan paste karein
+    const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbw8Ox7KhU3PlUl3fp_ZWwT5M61KOGvtYPlNv3mDEJ2jgQ9y2hry5LBIfbBqk1gXcme91w/exec";
+    
+    let syncInProgress = false;
+    let lastSyncStatus = "Not synced";
+
+    // ==================== DATA LOADING FUNCTIONS ====================
+    async function loadData() {
+        try {
+            const container = document.getElementById('app');
+            if(container && currentUser) container.innerHTML = '<div style="text-align:center; color:white; padding:50px;"><div class="loading" style="width:40px; height:40px;"></div><h2>Loading data...</h2></div>';
+            
+            const response = await fetch(GOOGLE_SHEETS_API_URL + "?t=" + Date.now());
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                const headers = result.data[0];
+                const rows = result.data.slice(1);
+                
+                products = rows.map(row => {
+                    let obj = {};
+                    headers.forEach((h, i) => {
+                        let value = row[i];
+                        if ((h === 'Composition' || h === 'Specification') && value && typeof value === 'string') {
+                            try {
+                                value = JSON.parse(value);
+                            } catch(e) {}
+                        }
+                        obj[h] = value;
+                    });
+                    return obj;
+                });
+                
+                saveProducts();
+                render();
+                showToast(`✅ ${products.length} products loaded`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            const localData = localStorage.getItem('qr_products_pro');
+            if (localData) {
+                products = JSON.parse(localData);
+                showToast("Using cached data (offline mode)", true);
+                render();
+            } else {
+                if(currentUser) showToast("Network error!", true);
+                render();
+            }
+        }
+    }
+    
+    async function fastLoadData() {
+        try {
+            const response = await fetch(GOOGLE_SHEETS_API_URL + "?t=" + Date.now());
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                const headers = result.data[0];
+                const rows = result.data.slice(1);
+                
+                const newProducts = rows.map(row => {
+                    let obj = {};
+                    headers.forEach((h, i) => {
+                        let value = row[i];
+                        if ((h === 'Composition' || h === 'Specification') && value && typeof value === 'string') {
+                            try {
+                                value = JSON.parse(value);
+                            } catch(e) {}
+                        }
+                        obj[h] = value;
+                    });
+                    return obj;
+                });
+                
+                products = newProducts;
+                saveProducts();
+                
+                if (currentView === 'list' && document.getElementById('productTable')) {
+                    renderTable();
+                } else if (currentView === 'dashboard') {
+                    const totalElem = document.querySelector('.stat-number');
+                    if(totalElem) {
+                        const active = products.filter(p => p.Status === 'Active').length;
+                        const statNumbers = document.querySelectorAll('.stat-number');
+                        if(statNumbers[0]) statNumbers[0].innerText = products.length;
+                        if(statNumbers[1]) statNumbers[1].innerText = active;
+                    }
+                }
+            }
+        } catch(e) {
+            console.log("Fast reload failed", e);
+        }
+    }
+    
+    function saveProducts() {
+        localStorage.setItem('qr_products_pro', JSON.stringify(products));
+    }
+    
+    // ==================== GOOGLE SHEETS SYNC FUNCTIONS ====================
+    async function syncToGoogleSheets() {
+        if (syncInProgress) {
+            showToast("Sync already in progress...");
+            return;
+        }
+        
+        syncInProgress = true;
+        const syncStatus = document.getElementById('syncStatus');
+        if(syncStatus) syncStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+        
+        try {
+            let successCount = 0;
+            for (let i = 0; i < products.length; i++) {
+                const success = await syncSingleProduct(products[i], 'update');
+                if (success) successCount++;
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            lastSyncStatus = `Last sync: ${new Date().toLocaleTimeString()} | ${successCount}/${products.length} synced`;
+            showToast(`Sync completed! ${successCount} products synced`);
+        } catch (error) {
+            console.error("Sync error:", error);
+            lastSyncStatus = `Sync failed at ${new Date().toLocaleTimeString()}`;
+            showToast("Sync failed!", true);
+        } finally {
+            syncInProgress = false;
+            updateSyncStatusDisplay();
+        }
+    }
+    
+    async function syncSingleProduct(product, action = 'update') {
+        try {
+            const formData = new URLSearchParams();
+            formData.append('action', action);
+            formData.append('product', JSON.stringify(product));
+            const response = await fetch(GOOGLE_SHEETS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            });
+            const result = await response.json();
+            return result.success;
+        } catch(e) {
+            console.error("Sync error:", e);
+            return false;
+        }
+    }
+    
+    async function deleteFromSheets(productId) {
+        try {
+            const formData = new URLSearchParams();
+            formData.append('action', 'delete');
+            formData.append('productId', productId);
+            const response = await fetch(GOOGLE_SHEETS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            });
+            const result = await response.json();
+            return result.success;
+        } catch(e) {
+            console.error("Delete error:", e);
+            return false;
+        }
+    }
+    
+    function updateSyncStatusDisplay() {
+        const statusDiv = document.getElementById('syncStatus');
+        if (statusDiv) statusDiv.innerHTML = lastSyncStatus;
+    }
+    
+    // ==================== HELPER FUNCTIONS ====================
+    function showToast(msg, isError = false) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.style.background = isError ? '#dc2626' : '#1e293b';
+        toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    function getProductUrl(productId) {
+        return `${BASE_URL}?product=${encodeURIComponent(productId)}`;
+    }
+    
+    function escapeHtml(str) {
+        if(!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if(m === '&') return '&amp;';
+            if(m === '<') return '&lt;';
+            if(m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    function getField(product, possibleKeys, defaultValue = '-') {
+        for(let key of possibleKeys) {
+            if(product[key] && product[key] !== '' && product[key] !== '-' && product[key] !== null && product[key] !== undefined) {
+                return product[key];
+            }
+        }
+        return defaultValue;
+    }
+    
+
+
+
+
+// ==================== PRODUCT DETAIL PAGE (SAME AS SCREENSHOT - WITH BRAND NAME) ====================
+function showProductDetailPage(product) {
+    let comp = [], spec = [];
+    try {
+        comp = typeof product.Composition === 'string' ? JSON.parse(product.Composition) : (product.Composition || []);
+        spec = typeof product.Specification === 'string' ? JSON.parse(product.Specification) : (product.Specification || []);
+    } catch(e) {}
+    
+    const bioStimulantTitle = getField(product, ['Title of BioStimulant', 'BioStimulantTitle', 'Brand', 'BioStimulant'], '-');
+    const brandName = getField(product, ['Brand Name', 'BrandName', 'Category', 'Brand'], '-');
+    const companyName = getField(product, ['Company', 'Company Name'], '-');
+    const batchNumber = getField(product, ['Batch Number', 'BatchNo'], '-');
+    const expiryDate = product['Expiry Date'] || '';
+    const dose = getField(product, ['Dose'], '-');
+    const crop = getField(product, ['Crop'], '-');
+    
+    document.body.innerHTML = `
+        <div class="product-detail-container" style="max-width:900px; margin:20px auto; background:#ffffff; border-radius:28px; padding:24px 20px 32px; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+            <!-- Header Section -->
+            <div style="text-align:center; margin-bottom:24px;">
+                <div style="width:64px; height:64px; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); border-radius:60px; display:inline-flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-leaf" style="font-size:30px; color:white;"></i>
+                </div>
+                <h1 style="margin-top:12px; font-size:1.4rem; font-weight:600; color:#1e293b;">${escapeHtml(product['Product Name'] || 'Product')}</h1>
+                <span style="background: #10b981; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-block; margin-top:6px;">✓ Verified Product</span>
+            </div>
+            
+            <hr style="margin:16px 0; border:none; border-top:1px solid #e9edf2;">
+            
+            <!-- Product Details -->
+            <div style="margin: 16px 0;">
+
+  <!-- Brand Name with colon (NEW ADDED) -->
+                <div style="padding: 8px 0; border-bottom: 1px solid #edf0f5;">
+                    <span style="color: #4a6fa5; font-weight: 600; font-size:0.85rem;">Brand Name :</span>
+                    <span style="color: #334155; font-size:0.85rem;"> ${escapeHtml(brandName)}</span>
+                </div>
+
+                <!-- Gazette Notification No -->
+                <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #edf0f5; flex-wrap:wrap; gap:6px;">
+                    <span style="color: #4a6fa5; font-weight: 600; font-size:0.85rem;">Gazette Notification No.</span>
+                    <span style="color: #334155; font-size:0.85rem;">${escapeHtml(batchNumber)}</span>
+                </div>
+                
+                <!-- Gazette Notification Date -->
+                <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #edf0f5; flex-wrap:wrap; gap:6px;">
+                    <span style="color: #4a6fa5; font-weight: 600; font-size:0.85rem;">Gazette Notification Date</span>
+                    <span style="color: #334155; font-size:0.85rem;">${expiryDate && expiryDate !== '' ? new Date(expiryDate).toLocaleDateString('en-GB') : '-'}</span>
+                </div>
+                
+                <!-- Title of BioStimulant with colon -->
+                <div style="padding: 8px 0; border-bottom: 1px solid #edf0f5;">
+                    <span style="color: #4a6fa5; font-weight: 600; font-size:0.85rem;">Title of BioStimulant :</span>
+                    <span style="color: #334155; font-size:0.85rem;"> ${escapeHtml(bioStimulantTitle)}</span>
+                </div>
+                
+              
+            
+                <!-- Company Name -->
+                ${companyName && companyName !== '' && companyName !== '-' ? `
+                <div style="margin: 12px 0 8px 0;">
+                    <div style="padding: 4px 0;">
+                        <span style="color: #475569; font-weight: 500; font-size:0.85rem;">${escapeHtml(companyName)}</span>
+                    </div>
+                </div>
+                ` : ''}
+            
+                <!-- COMPOSITION Section -->
+                ${comp.length > 0 ? `
+                <h3 style="margin: 20px 0 10px 0; font-size:1rem; color:#1e293b; font-weight:600;">Composition</h3>
+                <div style="overflow-x: auto; margin-bottom: 16px;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #e9edf2; border-radius: 12px; overflow: hidden; font-size:0.8rem;">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #e9edf2; color: #4a6fa5; font-weight: 600;">Parameter</th>
+                                <th style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #e9edf2; color: #4a6fa5; font-weight: 600;">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${comp.map(c => `
+                            <tr>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #475569;">${escapeHtml(c.param)}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 500;">${escapeHtml(c.val)}</td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+            
+                <!-- SPECIFICATION Section -->
+                ${spec.length > 0 ? `
+                <h3 style="margin: 20px 0 10px 0; font-size:1rem; color:#1e293b; font-weight:600;">Specification</h3>
+                <div style="overflow-x: auto; margin-bottom: 16px;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid #e9edf2; border-radius: 12px; overflow: hidden; font-size:0.8rem;">
+                        <thead>
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #e9edf2; color: #4a6fa5; font-weight: 600;">Parameter</th>
+                                <th style="padding: 8px 12px; text-align: left; border-bottom: 1px solid #e9edf2; color: #4a6fa5; font-weight: 600;">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${spec.map(s => `
+                            <tr>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #475569;">${escapeHtml(s.param)}</td>
+                                <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 500;">${escapeHtml(s.val)}</td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                ` : ''}
+            
+                <!-- Dose & Crop -->
+                <div style="margin: 16px 0 12px 0;">
+                    <div style="padding: 8px 0; border-bottom: 1px solid #edf0f5; display:flex; flex-wrap:wrap; gap:6px;">
+                        <span style="color: #4a6fa5; font-weight: 600; font-size:0.85rem; min-width:55px;">Dose:</span>
+                        <span style="color: #1e293b; font-size:0.85rem;"> ${escapeHtml(dose)}</span>
+                    </div>
+                    <div style="padding: 8px 0; border-bottom: 1px solid #edf0f5; display:flex; flex-wrap:wrap; gap:6px;">
+                        <span style="color: #4a6fa5; font-weight: 600; font-size:0.85rem; min-width:55px;">Crop:</span>
+                        <span style="color: #1e293b; font-size:0.85rem;"> ${escapeHtml(crop)}</span>
+                    </div>
+                </div>
+            
+                <hr style="margin:16px 0; border:none; border-top:1px solid #e9edf2;">
+                <p style="text-align:center; color:#94a3b8; font-size: 10px; margin-top: 16px;">Product ID: ${escapeHtml(product.PRODUCT_ID)}</p>
+                <div style="text-align:center; margin-top:15px;">
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+
+    // ==================== LOGIN ====================
+    function renderLogin() {
+        document.getElementById('app').innerHTML = `
+            <div style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+                <div class="glass-card" style="max-width:450px; width:100%; text-align:center;">
+                    <div style="width:80px; height:80px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:60px; display:inline-flex; align-items:center; justify-content:center; margin-bottom:20px;">
+                        <i class="fas fa-qrcode" style="font-size:40px; color:white;"></i>
+                    </div>
+                    <h2>QR Product System Pro</h2>
+                    <p style="color:#666; margin:10px 0 20px;">Bulk QR + Google Sheets Sync</p>
+                    <input type="text" id="loginUser" placeholder="Username" value="admin" style="margin-bottom:12px;">
+                    <input type="password" id="loginPass" placeholder="Password" value="admin123" style="margin-bottom:20px;">
+                    <button class="btn-primary" style="width:100%;" onclick="doLogin()">Login <i class="fas fa-arrow-right"></i></button>
+                    <div class="info-box" style="margin-top:20px;"><small>🔐 Demo: admin / admin123</small><br><small>📱 Scan QR to view product details</small></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    window.doLogin = function() {
+        const user = document.getElementById('loginUser').value;
+        const pass = document.getElementById('loginPass').value;
+        if (user === 'admin' && pass === 'admin123') {
+            localStorage.setItem('qr_logged_in', 'true');
+            currentUser = true;
+            loadData();
+            showToast('Login Successful!');
+        } else {
+            showToast('Invalid Credentials!', true);
+        }
+    };
+    
+    // ==================== DASHBOARD ====================
+    function renderDashboard() {
+        const total = products.length;
+        const active = products.filter(p => p.Status === 'Active').length;
+        document.getElementById('app').innerHTML = `
+            <div class="container">
+                <div class="sync-status" id="syncStatus">${lastSyncStatus}</div>
+                <div class="nav">
+                    <div class="nav-item ${currentView === 'dashboard' ? 'active' : ''}" onclick="changeView('dashboard')">📊 Dashboard</div>
+                    <div class="nav-item ${currentView === 'add' ? 'active' : ''}" onclick="changeView('add')">➕ Add Product</div>
+                    <div class="nav-item ${currentView === 'list' ? 'active' : ''}" onclick="changeView('list')">📦 Products</div>
+                    <div class="nav-item ${currentView === 'bulk' ? 'active' : ''}" onclick="changeView('bulk')">📇 Bulk QR</div>
+                    <div class="nav-item ${currentView === 'settings' ? 'active' : ''}" onclick="changeView('settings')">⚙️ Settings</div>
+                    <div class="nav-item" onclick="logout()">🚪 Logout</div>
+                </div>
+                <div class="grid-3">
+                    <div class="stat-card" onclick="changeView('list')"><i class="fas fa-box" style="font-size:42px; color:#667eea;"></i><h3>Total Products</h3><div class="stat-number">${total}</div></div>
+                    <div class="stat-card" onclick="changeView('bulk')"><i class="fas fa-qrcode" style="font-size:42px; color:#667eea;"></i><h3>QR Codes</h3><div class="stat-number">${total}</div></div>
+                    <div class="stat-card" onclick="syncToGoogleSheets()"><i class="fas fa-cloud-upload-alt" style="font-size:42px; color:#667eea;"></i><h3>Google Sheets</h3><div class="stat-number">Sync Now</div></div>
+                </div>
+                <div class="glass-card"><h3><i class="fas fa-star"></i> Features</h3><div class="grid-2" style="margin-top:16px;"><div class="info-box"><i class="fas fa-check-circle"></i> Bulk QR Code Generation</div><div class="info-box"><i class="fas fa-check-circle"></i> PDF Export</div><div class="info-box"><i class="fas fa-check-circle"></i> Google Sheets Integration</div><div class="info-box"><i class="fas fa-check-circle"></i> Auto Webpage on Scan</div></div><button class="btn-success" onclick="syncToGoogleSheets()" style="width:100%; margin-top:20px;"><i class="fas fa-cloud-upload-alt"></i> Sync All to Google Sheets</button></div>
+            </div>
+        `;
+        updateSyncStatusDisplay();
+        if(refreshInterval) clearInterval(refreshInterval);
+        refreshInterval = setInterval(() => { if(currentView === 'dashboard') fastLoadData(); }, 30000);
+    }
+    
+    // ==================== ADD/EDIT PRODUCT ====================
+    let compRows = [], specRows = [];
+    let editingProductId = null;
+    
+    function renderAddProduct(editId = null) {
+        editingProductId = editId;
+        let product = null;
+        if (editId) product = products.find(p => p.PRODUCT_ID === editId);
+        
+        try {
+            compRows = product && product.Composition ? (typeof product.Composition === 'string' ? JSON.parse(product.Composition) : product.Composition) : [];
+            specRows = product && product.Specification ? (typeof product.Specification === 'string' ? JSON.parse(product.Specification) : product.Specification) : [];
+        } catch(e) { compRows = []; specRows = []; }
+        
+        const existingBioStimulant = product ? getField(product, ['Title of BioStimulant', 'BioStimulantTitle', 'Brand'], '') : '';
+        const existingBrandName = product ? getField(product, ['Brand Name', 'BrandName', 'Category'], '') : '';
+        
+        document.getElementById('app').innerHTML = `
+            <div class="container">
+                <div class="nav">
+                    <div class="nav-item" onclick="changeView('dashboard')">📊 Dashboard</div>
+                    <div class="nav-item active" onclick="changeView('add')">${editId ? '✏️ Edit' : '➕ Add'} Product</div>
+                    <div class="nav-item" onclick="changeView('list')">📦 Products</div>
+                    <div class="nav-item" onclick="changeView('bulk')">📇 Bulk QR</div>
+                    <div class="nav-item" onclick="logout()">🚪 Logout</div>
+                </div>
+                <div class="glass-card">
+                    <h2>${editId ? 'Edit Product' : 'Create New Product'}</h2>
+                    <form id="productForm">
+                        <div class="grid-2">
+                            <div><label>Product Name *</label><input name="productName" value="${escapeHtml(product?.['Product Name'] || '')}" required></div>
+                            <div><label>Title of BioStimulant</label><input name="bioStimulantTitle" value="${escapeHtml(existingBioStimulant)}" placeholder="Enter Title of BioStimulant"></div>
+                            <div><label>Brand Name</label><input name="brandName" value="${escapeHtml(existingBrandName)}" placeholder="Enter Brand Name"></div>
+                            <div><label>liquid line</label><input name="company" value="${escapeHtml(product?.Company || '')}"></div>
+                            <div><label>Gazette Notification No</label><input name="batch" value="${escapeHtml(product?.['Batch Number'] || '')}"></div>
+                            <div><label>Gazette Notification Date</label><input type="date" name="expDate" value="${product?.['Expiry Date'] || ''}"></div>
+                        </div>
+                        <h3 style="margin:20px 0 10px;">📋 Composition</h3><div id="compContainer"></div><button type="button" class="btn-secondary" onclick="addCompRow()">+ Add Composition</button>
+                        <h3 style="margin:20px 0 10px;">📊 Specifications</h3><div id="specContainer"></div><button type="button" class="btn-secondary" onclick="addSpecRow()">+ Add Specification</button>
+                        <div class="grid-2"><div><label>Dose</label><input name="dose" value="${escapeHtml(product?.Dose || '')}"></div><div><label>Crop</label><input name="crop" value="${escapeHtml(product?.Crop || '')}"></div></div>
+                        <button type="submit" class="btn-primary" style="margin-top:20px; width:100%;">${editId ? 'Update Product' : 'Save & Generate QR'}</button>
+                    </form>
+                </div>
+            </div>
+        `;
+        renderCompRows();
+        renderSpecRows();
+        
+        document.getElementById('productForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const productData = {
+                'PRODUCT_ID': editingProductId || ('PRD_' + Date.now() + '_' + Math.floor(Math.random() * 10000)),
+                'Product Name': fd.get('productName') || '',
+                'Title of BioStimulant': fd.get('bioStimulantTitle') || '',
+                'Brand Name': fd.get('brandName') || '',
+                'Company': fd.get('company') || '',
+                'Batch Number': fd.get('batch') || '',
+                'Expiry Date': fd.get('expDate') || '',
+                'Composition': JSON.stringify(compRows),
+                'Specification': JSON.stringify(specRows),
+                'Dose': fd.get('dose') || '',
+                'Crop': fd.get('crop') || '',
+                'Usage Instructions': fd.get('usageInstructions') || '',
+                'Storage Instructions': fd.get('storageInstructions') || '',
+                'Warning Notes': fd.get('warningNotes') || '',
+                'Status': fd.get('status') || 'Active',
+                'Timestamp': new Date().toISOString()
+            };
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+            try {
+                if (editingProductId) {
+                    const index = products.findIndex(p => p.PRODUCT_ID === editingProductId);
+                    if (index !== -1) products[index] = productData;
+                } else {
+                    products.push(productData);
+                }
+                saveProducts();
+                await syncSingleProduct(productData, editingProductId ? 'update' : 'add');
+                showToast(editingProductId ? 'Product Updated! ✅' : 'Product Created! ✅');
+                if (!editingProductId) {
+                    setTimeout(() => showQRModal(productData.PRODUCT_ID), 100);
+                }
+                await fastLoadData();
+                changeView('list');
+            } catch(error) { showToast("Error saving product!", true); }
+            finally { submitBtn.innerHTML = originalText; submitBtn.disabled = false; }
+        };
+    }
+    
+    window.addCompRow = () => { compRows.push({ param: '', val: '' }); renderCompRows(); };
+    window.addSpecRow = () => { specRows.push({ param: '', val: '' }); renderSpecRows(); };
+    
+    function renderCompRows() {
+        const c = document.getElementById('compContainer');
+        if(!c) return;
+        c.innerHTML = compRows.map((r,i) => `<div style="display:flex; gap:12px; margin:10px 0;"><input placeholder="Parameter" value="${escapeHtml(r.param)}" onchange="compRows[${i}].param=this.value" style="flex:1"><input placeholder="Value" value="${escapeHtml(r.val)}" onchange="compRows[${i}].val=this.value" style="flex:1"><button type="button" class="btn-secondary" onclick="compRows.splice(${i},1); renderCompRows()">❌</button></div>`).join('');
+    }
+    
+    function renderSpecRows() {
+        const s = document.getElementById('specContainer');
+        if(!s) return;
+        s.innerHTML = specRows.map((r,i) => `<div style="display:flex; gap:12px; margin:10px 0;"><input placeholder="Parameter" value="${escapeHtml(r.param)}" onchange="specRows[${i}].param=this.value" style="flex:1"><input placeholder="Value" value="${escapeHtml(r.val)}" onchange="specRows[${i}].val=this.value" style="flex:1"><button type="button" class="btn-secondary" onclick="specRows.splice(${i},1); renderSpecRows()">❌</button></div>`).join('');
+    }
+    
+    // ==================== PRODUCT LIST ====================
+    function renderProductList() {
+        document.getElementById('app').innerHTML = `
+            <div class="container">
+                <div class="nav">
+                    <div class="nav-item" onclick="changeView('dashboard')">📊 Dashboard</div>
+                    <div class="nav-item" onclick="changeView('add')">➕ Add Product</div>
+                    <div class="nav-item active" onclick="changeView('list')">📦 Products</div>
+                    <div class="nav-item" onclick="changeView('bulk')">📇 Bulk QR</div>
+                    <div class="nav-item" onclick="logout()">🚪 Logout</div>
+                </div>
+                <div class="glass-card">
+                    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:20px;"><h2>All Products (${products.length})</h2><div style="display:flex; gap:10px;"><input type="text" id="searchBox" placeholder="🔍 Search..." style="max-width:300px;"><button class="btn-secondary" onclick="exportToCSV()"><i class="fas fa-download"></i> CSV</button><button class="btn-success" onclick="syncToGoogleSheets()"><i class="fas fa-cloud-upload-alt"></i> Sync All</button></div></div>
+                    <div style="overflow-x:auto;"><table style="width:100%"><thead><tr><th>QR</th><th>ID</th><th>Product Name</th><th>Title of BioStimulant</th><th>Brand Name</th><th>Status</th><th>Actions</th></tr></thead><tbody id="productTable"></tbody>}</div>
+                </div>
+            </div>
+        `;
+        renderTable();
+        document.getElementById('searchBox').oninput = () => renderTable();
+    }
+    
+    function renderTable() {
+        const search = document.getElementById('searchBox')?.value.toLowerCase() || '';
+        const filtered = products.filter(p => {
+            const bioTitle = getField(p, ['Title of BioStimulant', 'Brand'], '');
+            const brandName = getField(p, ['Brand Name', 'Category'], '');
+            return (p['Product Name'] || '').toLowerCase().includes(search) || 
+                   bioTitle.toLowerCase().includes(search) || 
+                   brandName.toLowerCase().includes(search);
+        });
+        const tbody = document.getElementById('productTable');
+        if(!tbody) return;
+        tbody.innerHTML = filtered.map(p => {
+            const bioTitle = getField(p, ['Title of BioStimulant', 'Brand'], '-');
+            const brandName = getField(p, ['Brand Name', 'Category'], '-');
+            return `<tr>
+                <td><div id="qr_${p.PRODUCT_ID.replace(/[^a-zA-Z0-9]/g, '_')}" style="width:50px; height:50px;"></div></td>
+                <td><code>${escapeHtml((p.PRODUCT_ID || '').substring(0,12))}...</code></td>
+                <td><strong>${escapeHtml(p['Product Name'] || '-')}</strong></div></td>
+                <td>${escapeHtml(bioTitle)}</div></div></div></td>
+                <td>${escapeHtml(brandName)}</div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></td>
+                <td><span class="${p.Status === 'Active' ? 'badge-active' : 'badge-inactive'}">${escapeHtml(p.Status || 'Active')}</span></td>
+                <td><button class="btn-secondary" style="padding:6px 12px;" onclick="viewQR('${p.PRODUCT_ID}')"><i class="fas fa-qrcode"></i></button>
+                    <button class="btn-secondary" style="padding:6px 12px;" onclick="editProduct('${p.PRODUCT_ID}')"><i class="fas fa-edit"></i></button>
+                    <button class="btn-danger" style="padding:6px 12px;" onclick="deleteProduct('${p.PRODUCT_ID}')"><i class="fas fa-trash"></i></button>
+                  </div>
+            </div>
+            `;
+        }).join('');
+        filtered.forEach((p, index) => { setTimeout(() => { const elem = document.getElementById(`qr_${p.PRODUCT_ID.replace(/[^a-zA-Z0-9]/g, '_')}`); if(elem && !elem.hasChildNodes()) new QRCode(elem, { text: getProductUrl(p.PRODUCT_ID), width: 50, height: 50 }); }, index * 10); });
+    }
+    
+    window.viewQR = (id) => showQRModal(id);
+    window.editProduct = (id) => { currentView = 'add'; renderAddProduct(id); };
+    window.deleteProduct = async (id) => { if(confirm('Delete this product?')) { products = products.filter(p => p.PRODUCT_ID !== id); saveProducts(); await deleteFromSheets(id); renderProductList(); showToast('Product deleted'); } };
+    
+    function showQRModal(pid) {
+        const product = products.find(p => p.PRODUCT_ID === pid);
+        const bioTitle = getField(product, ['Title of BioStimulant', 'Brand'], '-');
+        const brandName = getField(product, ['Brand Name', 'Category'], '-');
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-content"><h2><i class="fas fa-qrcode"></i> QR Code</h2><div id="qrLarge" style="display:flex; justify-content:center; margin:20px 0;"></div><div class="info-box"><p><strong>Product:</strong> ${escapeHtml(product?.['Product Name'] || '-')}</p><p><strong>Title of BioStimulant:</strong> ${escapeHtml(bioTitle)}</p><p><strong>Brand Name:</strong> ${escapeHtml(brandName)}</p></div><div style="display:flex; gap:12px;"><button class="btn-primary" onclick="window.open('${getProductUrl(pid)}', '_blank')">Test URL</button><button class="btn-secondary" onclick="this.closest('.modal').remove()">Close</button></div></div>`;
+        document.body.appendChild(modal);
+        setTimeout(() => new QRCode(document.getElementById("qrLarge"), { text: getProductUrl(pid), width: 200, height: 200 }), 100);
+    }
+    
+    // ==================== BULK QR ====================
+    function renderBulkQR() {
+        document.getElementById('app').innerHTML = `
+            <div class="container"><div class="nav"><div class="nav-item" onclick="changeView('dashboard')">📊 Dashboard</div><div class="nav-item" onclick="changeView('add')">➕ Add Product</div><div class="nav-item" onclick="changeView('list')">📦 Products</div><div class="nav-item active" onclick="changeView('bulk')">📇 Bulk QR</div><div class="nav-item" onclick="logout()">🚪 Logout</div></div>
+            <div class="glass-card"><h2>Bulk QR Code Generation</h2><div><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"> <label>Select All (${products.length})</label></div><div id="productSelector" style="max-height:300px; overflow-y:auto; margin:15px 0;">${products.map(p => { const bioTitle = getField(p, ['Title of BioStimulant', 'Brand'], '-'); const brandName = getField(p, ['Brand Name', 'Category'], '-'); return `<div><input type="checkbox" class="product-checkbox" value="${p.PRODUCT_ID}"> ${escapeHtml(p['Product Name'] || '-')} - Bio: ${escapeHtml(bioTitle)} | Brand: ${escapeHtml(brandName)}</div>`; }).join('')}</div><button class="btn-primary" onclick="generateSelectedQRs()">Generate QR Codes</button><button class="btn-primary" onclick="exportQRsToPDF()">Export to PDF</button><div id="qrPreviewContainer" style="margin-top:20px;"></div></div></div>
+        `;
+    }
+    
+    window.toggleSelectAll = function() { const cb = document.querySelectorAll('.product-checkbox'); const selectAll = document.getElementById('selectAll'); cb.forEach(c => c.checked = selectAll.checked); };
+    
+    window.generateSelectedQRs = function() {
+        const selected = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+        if(selected.length === 0) { showToast("Select products", true); return; }
+        const container = document.getElementById('qrPreviewContainer');
+        container.innerHTML = `<h3>QR Codes (${selected.length})</h3><div class="qr-grid" id="qrGrid"></div>`;
+        const grid = document.getElementById('qrGrid');
+        selected.forEach((pid, i) => { 
+            const p = products.find(x => x.PRODUCT_ID === pid); 
+            const brandName = getField(p, ['Brand Name', 'BrandName', 'Category', 'Brand'], '-'); 
+            const div = document.createElement('div'); 
+            div.className = 'qr-item'; 
+            const qrId = `bulk_qr_${i}`; 
+            // Sirf Brand Name dikhega, bold mein
+            div.innerHTML = `<div id="${qrId}" style="margin:0 auto;"></div><p style="margin-top:10px; font-weight:700; font-size:12px;">${escapeHtml(brandName)}</p>`; 
+            grid.appendChild(div); 
+            setTimeout(() => new QRCode(document.getElementById(qrId), { text: getProductUrl(pid), width: 130, height: 130 }), i * 50); 
+        });
+        showToast(`Generated ${selected.length} QR codes!`);
+    };
+    
+    window.exportQRsToPDF = function() { 
+        const container = document.getElementById('qrPreviewContainer');
+        if(!container || !container.querySelector('.qr-grid')) { 
+            showToast("Please generate QR codes first", true); 
+            return; 
+        }
+        
+        // Create a temporary div for PDF generation
+        const pdfContent = document.createElement('div');
+        pdfContent.className = 'pdf-print-area';
+        pdfContent.style.padding = '20px';
+        pdfContent.style.background = 'white';
+        
+        // Clone the QR grid content
+        const qrGrid = container.querySelector('.qr-grid');
+        const clonedGrid = qrGrid.cloneNode(true);
+        pdfContent.appendChild(clonedGrid);
+        
+        // Add title
+        const title = document.createElement('h2');
+        title.style.textAlign = 'center';
+        title.style.marginBottom = '20px';
+        title.style.color = '#333';
+        title.style.fontSize = '16px';
+        title.innerHTML = 'Product QR Codes';
+        pdfContent.insertBefore(title, pdfContent.firstChild);
+        
+        // Add timestamp
+        const timestamp = document.createElement('p');
+        timestamp.style.textAlign = 'center';
+        timestamp.style.color = '#666';
+        timestamp.style.fontSize = '10px';
+        timestamp.style.marginBottom = '20px';
+        timestamp.innerHTML = `Generated on: ${new Date().toLocaleString()}`;
+        pdfContent.appendChild(timestamp);
+        
+        document.body.appendChild(pdfContent);
+        
+        const opt = { 
+            margin: [0.5, 0.5, 0.5, 0.5], 
+            filename: `qr_codes_${Date.now()}.pdf`, 
+            image: { type: 'jpeg', quality: 0.98 }, 
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                letterRendering: true
+            }, 
+            jsPDF: { 
+                unit: 'in', 
+                format: 'a4', 
+                orientation: 'portrait' 
+            }
+        };
+        
+        html2pdf().set(opt).from(pdfContent).save().then(() => {
+            document.body.removeChild(pdfContent);
+            showToast("PDF generated successfully!");
+        }).catch(err => {
+            document.body.removeChild(pdfContent);
+            showToast("Error generating PDF", true);
+        });
+    };
+    
+    window.exportToCSV = function() { 
+        const headers = ['PRODUCT_ID', 'Product Name', 'Title of BioStimulant', 'Brand Name', 'Company', 'Batch Number', 'Status']; 
+        const rows = [headers.join(',')]; 
+        products.forEach(p => { 
+            const bioTitle = getField(p, ['Title of BioStimulant', 'Brand'], ''); 
+            const brandName = getField(p, ['Brand Name', 'Category'], ''); 
+            rows.push(`"${p.PRODUCT_ID || ''}","${(p['Product Name'] || '').replace(/"/g, '""')}","${bioTitle.replace(/"/g, '""')}","${brandName.replace(/"/g, '""')}","${(p.Company || '').replace(/"/g, '""')}","${(p['Batch Number'] || '').replace(/"/g, '""')}","${(p.Status || '').replace(/"/g, '""')}"`); 
+        }); 
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv' }); 
+        const a = document.createElement('a'); 
+        a.href = URL.createObjectURL(blob); 
+        a.download = `products_${Date.now()}.csv`; 
+        a.click(); 
+        URL.revokeObjectURL(a.href); 
+    };
+    
+    // ==================== SETTINGS ====================
+    function renderSettings() {
+        document.getElementById('app').innerHTML = `
+            <div class="container"><div class="nav"><div class="nav-item" onclick="changeView('dashboard')">📊 Dashboard</div><div class="nav-item" onclick="changeView('add')">➕ Add Product</div><div class="nav-item" onclick="changeView('list')">📦 Products</div><div class="nav-item" onclick="changeView('bulk')">📇 Bulk QR</div><div class="nav-item active" onclick="changeView('settings')">⚙️ Settings</div><div class="nav-item" onclick="logout()">🚪 Logout</div></div>
+            <div class="glass-card"><h2>System Settings</h2><div class="info-box"><p><strong>Google Sheets API URL:</strong></p><code style="word-break:break-all;">${GOOGLE_SHEETS_API_URL}</code><button class="btn-primary" style="margin-top:10px;" onclick="syncToGoogleSheets()">Sync Now</button><button class="btn-secondary" onclick="exportAllData()">Export JSON</button><input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(this)"><button class="btn-secondary" onclick="document.getElementById('importFile').click()">Import JSON</button><button class="btn-danger" onclick="clearAllData()">Clear All Data</button></div></div></div>
+        `;
+    }
+    
+    window.exportAllData = function() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(products, null, 2)], { type: 'application/json' })); a.download = `backup_${Date.now()}.json`; a.click(); };
+    window.importData = function(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = e => { try { const imported = JSON.parse(e.target.result); if(Array.isArray(imported)) { products = imported; saveProducts(); showToast(`Imported ${products.length} products`); render(); } else showToast("Invalid format", true); } catch(err) { showToast("Error parsing file", true); } }; reader.readAsText(file); };
+    window.clearAllData = function() { if(confirm("Delete ALL products?")) { products = []; saveProducts(); render(); showToast("All data cleared"); } };
+    
+    // ==================== ROUTING ====================
+    const urlParams = new URLSearchParams(window.location.search);
+    const productIdFromUrl = urlParams.get("product");
+    
+    if (productIdFromUrl) {
+        document.body.innerHTML = '<div style="text-align:center; color:white; padding:50px;"><div class="loading"></div><p>Loading product...</p></div>';
+        fetch(`${GOOGLE_SHEETS_API_URL}?product=${productIdFromUrl}&t=${Date.now()}`).then(res => res.json()).then(data => { if(data.PRODUCT_ID) showProductDetailPage(data); else throw new Error(); }).catch(() => { document.body.innerHTML = `<div style="text-align:center; color:white; padding:50px;"><h1>❌ Product Not Found</h1><button onclick="window.location.href='/'">Go Back</button></div>`; });
+    } else {
+        const loginStatus = localStorage.getItem("qr_logged_in");
+        currentUser = loginStatus === "true";
+        if (currentUser) loadData();
+        else renderLogin();
+    }
+    
+    window.changeView = (view) => { currentView = view; render(); };
+    window.logout = () => { localStorage.removeItem('qr_logged_in'); currentUser = false; if(refreshInterval) clearInterval(refreshInterval); render(); };
+    
+    function render() {
+        if(!currentUser) renderLogin();
+        else if(currentView === 'dashboard') renderDashboard();
+        else if(currentView === 'add') renderAddProduct();
+        else if(currentView === 'list') renderProductList();
+        else if(currentView === 'bulk') renderBulkQR();
+        else if(currentView === 'settings') renderSettings();
+    }
+</script>
+</body>
+</html>
