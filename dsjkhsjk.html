@@ -655,7 +655,6 @@ function showProductDetailPage(product) {
                     <input type="text" id="loginUser" placeholder="Username" value="admin" style="margin-bottom:12px;">
                     <input type="password" id="loginPass" placeholder="Password" value="admin123" style="margin-bottom:20px;">
                     <button class="btn-primary" style="width:100%;" onclick="doLogin()">Login <i class="fas fa-arrow-right"></i></button>
-                    <div class="info-box" style="margin-top:20px;"><small>🔐 Demo: admin / admin123</small><br><small>📱 Scan QR to view product details</small></div>
                 </div>
             </div>
         `;
@@ -664,7 +663,7 @@ function showProductDetailPage(product) {
     window.doLogin = function() {
         const user = document.getElementById('loginUser').value;
         const pass = document.getElementById('loginPass').value;
-        if (user === 'admin' && pass === 'admin123') {
+        if (user === 'vishal' && pass === 'vishal9975') {
             localStorage.setItem('qr_logged_in', 'true');
             currentUser = true;
             loadData();
