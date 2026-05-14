@@ -526,13 +526,13 @@ function showProductDetailPage(product) {
     document.body.innerHTML = `
         <div class="product-detail-container" style="max-width:900px; margin:20px auto; background:#ffffff; border-radius:28px; padding:24px 20px 32px; box-shadow:0 8px 24px rgba(0,0,0,0.08);">
             <!-- Header Section -->
-            <div style="text-align:center; margin-bottom:24px;">
-                <div style="width:64px; height:64px; background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); border-radius:60px; display:inline-flex; align-items:center; justify-content:center;">
-                    <i class="fas fa-leaf" style="font-size:30px; color:white;"></i>
-                </div>
-                <h1 style="margin-top:12px; font-size:1.4rem; font-weight:600; color:#1e293b;">${escapeHtml(product['Product Name'] || 'Product')}</h1>
-                <span style="background: #10b981; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-block; margin-top:6px;">✓ Verified Product</span>
-            </div>
+<div style="text-align:center; margin-bottom:24px;">
+    <div style="width:64px; height:64px; background:#f0fdf4; border-radius:60px; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.05); overflow:hidden;">
+        <img src="./logo.png" xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%233b82f6' d='M50,10 C35,30 20,45 20,60 C20,75 30,85 45,85 C55,85 65,78 70,68 C75,58 72,45 65,38 C58,31 48,32 45,38 C42,44 48,52 55,52 C62,52 65,48 65,48 C65,48 60,60 50,62 C40,64 30,56 30,46 C30,36 38,24 50,10Z'/%3E%3C/svg%3E" alt="leaf logo" style="width:42px; height:42px; object-fit:contain;">
+    </div>
+    <h1 style="margin-top:12px; font-size:1.4rem; font-weight:600; color:#1e293b;">${escapeHtml(product['Product Name'] || 'Product')}</h1>
+    <span style="background: #10b981; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-block; margin-top:6px;">✓ Verified Product</span>
+</div>
             
             <hr style="margin:16px 0; border:none; border-top:1px solid #e9edf2;">
             
